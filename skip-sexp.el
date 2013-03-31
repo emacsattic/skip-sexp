@@ -46,7 +46,9 @@
                   return ov)))
     (if ov
         (progn
-          (let ((prefix (overlay-get ov 'skip-sexp-prefix)))
+          (when (eq (overlay-get ov 'category) 'skip-sexp-prefix-category)
+            (setq ov (overlay-get ov 'skip-sexp-link)))
+          (let ((prefix (overlay-get ov 'skip-sexp-link)))
             (delete-region (overlay-start prefix) (overlay-end prefix)))
           (delete-overlay ov))
       (let (beg end)
@@ -74,7 +76,7 @@
 
 (defun skip-sexp-refresh (overlay after beg end &optional prev-length)
   (when after
-    (let ((prefix (overlay-get overlay 'skip-sexp-prefix))
+    (let ((prefix (overlay-get overlay 'skip-sexp-link))
           (size (- (overlay-end overlay)
                    (overlay-start overlay))))
       (if (equal size 0)
@@ -90,8 +92,10 @@
   (let ((prefix (make-overlay beg sbeg nil t nil))
         (sexp (make-overlay sbeg send nil t nil)))
     (overlay-put prefix 'category 'skip-sexp-prefix-category)
+    (overlay-put prefix 'skip-sexp-link sexp)
+
     (overlay-put sexp 'category 'skip-sexp-sexp-category)
-    (overlay-put sexp 'skip-sexp-prefix prefix)
+    (overlay-put sexp 'skip-sexp-link prefix)
     (overlay-put sexp 'modification-hooks '(skip-sexp-refresh))))
 
 (defun skip-sexp-remove-all-overlays ()
