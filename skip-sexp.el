@@ -28,35 +28,49 @@
 
 ;;; Code:
 
-(defun skip-sexp ()
-  (interactive)
-  (let (beg end)
-    (save-excursion
-      (mark-sexp)
-      (goto-char
-       (setq end (mark)))
-      (backward-sexp)
-      (setq beg (point)))
-    (let ((l (string-bytes (buffer-substring beg end))))
-      (save-excursion
-        (let ((prefix (format "#@%d." (1+ l))))
-          (goto-char beg)
-          (insert prefix)
-          (skip-sexp-install-overlays
-           beg (+ beg (length prefix))
-           (progn (forward-sexp) (point))))))))
+(put 'skip-sexp-prefix-category 'face 'font-lock-warning-face)
+(put 'skip-sexp-prefix-category 'intangible t)
+(put 'skip-sexp-prefix-category 'display "#;")
+(put 'skip-sexp-prefix-category 'evaporate t)
 
-(defun skip-sexp-detect-buffer ()
+(put 'skip-sexp-sexp-category 'face 'font-lock-comment-face)
+
+(defun skip-sexp-recognize-overlay (ov)
+  (member (overlay-get ov 'category)
+          '(skip-sexp-prefix-category skip-sexp-sexp-category)))
+
+(defun skip-sexp-toggle ()
+  (interactive)
+  (let ((ov (loop for ov in (overlays-at (point))
+                  if (skip-sexp-recognize-overlay ov)
+                  return ov)))
+    (if ov
+        (progn
+          (let ((prefix (overlay-get ov 'skip-sexp-prefix)))
+            (delete-region (overlay-start prefix) (overlay-end prefix)))
+          (delete-overlay ov))
+      (let (beg end)
+        (save-excursion
+          (mark-sexp)
+          (goto-char
+           (setq end (mark)))
+          (backward-sexp)
+          (setq beg (point)))
+        (let ((l (string-bytes (buffer-substring beg end))))
+          (save-excursion
+            (let ((prefix (format "#@%d." (1+ l))))
+              (goto-char beg)
+              (insert prefix)
+              (skip-sexp-install-overlays
+               beg (+ beg (length prefix))
+               (progn (forward-sexp) (point))))))))))
+
+(defun skip-sexp-install-all-overlays ()
   (save-excursion
     (goto-char (point-min))
     (while (re-search-forward (rx "#@" (1+ digit) ".") nil t)
       (skip-sexp-install-overlays
        (match-beginning 0) (match-end 0) (progn (mark-sexp) (mark))))))
-
-(put 'skip-sexp-prefix-category 'face 'font-lock-warning-face)
-(put 'skip-sexp-prefix-category 'intangible t)
-(put 'skip-sexp-prefix-category 'display "#;")
-(put 'skip-sexp-sexp-category 'face 'font-lock-comment-face)
 
 (defun skip-sexp-refresh (overlay after beg end &optional prev-length)
   (when after
@@ -76,6 +90,24 @@
     (overlay-put sexp 'skip-sexp-prefix prefix)
     (overlay-put sexp 'modification-hooks '(skip-sexp-refresh))))
 
-#@16.(+ 1 2 3 plop)
+(defun skip-sexp-remove-all-overlays ()
+  (loop for ov in (overlays-in (point-min) (point-max))
+        if (skip-sexp-recognize-overlay ov) do (delete-overlay ov)))
+
+(defvar skip-sexp-mode-map
+  (let ((map (make-sparse-keymap)))
+    (define-key map (kbd "C-M-;") 'skip-sexp-toggle)
+    map))
+
+(define-minor-mode skip-sexp-mode
+  "Skip sexp at reading time."
+  :lighter "#;"
+  :keymap skip-sexp-mode-map
+  (if skip-sexp-mode
+      (skip-sexp-install-all-overlays)
+    (skip-sexp-remove-all-overlays)))
+
+#@11.(+ 1 2 3 )
+
 (provide 'skip-sexp)
 ;;; skip-sexp.el ends here
