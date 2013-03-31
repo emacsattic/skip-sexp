@@ -55,6 +55,7 @@
 
 (put 'skip-sexp-prefix-category 'face 'font-lock-warning-face)
 (put 'skip-sexp-prefix-category 'intangible t)
+(put 'skip-sexp-prefix-category 'display "#;")
 (put 'skip-sexp-sexp-category 'face 'font-lock-comment-face)
 
 (defun skip-sexp-refresh (overlay after beg end &optional prev-length)
