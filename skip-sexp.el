@@ -115,6 +115,7 @@
       (skip-sexp-install-all-overlays)
     (skip-sexp-remove-all-overlays)))
 
+;;; example
 #@10.(+ 1 2 3)
 
 (provide 'skip-sexp)
