@@ -77,10 +77,14 @@
     (let ((prefix (overlay-get overlay 'skip-sexp-prefix))
           (size (- (overlay-end overlay)
                    (overlay-start overlay))))
-      (save-excursion
-        (goto-char (overlay-start prefix))
-        (re-search-forward (rx (1+ digit)) nil t)
-        (replace-match (format "%d" (1+ size)) nil nil)))))
+      (if (equal size 0)
+          (progn
+            (delete-region (overlay-start prefix) (overlay-end prefix))
+            (delete-overlay overlay))
+        (save-excursion
+          (goto-char (overlay-start prefix))
+          (re-search-forward (rx (1+ digit)) nil t)
+          (replace-match (format "%d" (1+ size)) nil nil))))))
 
 (defun skip-sexp-install-overlays (beg sbeg send)
   (let ((prefix (make-overlay beg sbeg nil t nil))
@@ -107,7 +111,7 @@
       (skip-sexp-install-all-overlays)
     (skip-sexp-remove-all-overlays)))
 
-#@11.(+ 1 2 3 )
+#@10.(+ 1 2 3)
 
 (provide 'skip-sexp)
 ;;; skip-sexp.el ends here
