@@ -117,6 +117,10 @@
 
 ;;; example
 #@10.(+ 1 2 3)
+(progn
+  #@11.(1+
+   42)
+  nil)
 
 (provide 'skip-sexp)
 ;;; skip-sexp.el ends here
