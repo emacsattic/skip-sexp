@@ -39,8 +39,12 @@
       (setq beg (point)))
     (let ((l (string-bytes (buffer-substring beg end))))
       (save-excursion
-        (goto-char beg)
-        (insert (format "#@%d." (1+ l)))))))
+        (let ((prefix (format "#@%d." (1+ l))))
+          (goto-char beg)
+          (insert prefix)
+          (skip-sexp-install-overlays
+           beg (+ beg (length prefix))
+           (progn (forward-sexp) (point))))))))
 
 (defun skip-sexp-detect-buffer ()
   (save-excursion
@@ -56,8 +60,8 @@
 (defun skip-sexp-refresh (overlay after beg end &optional prev-length)
   (when after
     (let ((prefix (overlay-get overlay 'skip-sexp-prefix))
-          (size (1+ (- (overlay-end overlay)
-                         (overlay-start overlay)))))
+          (size (- (overlay-end overlay)
+                   (overlay-start overlay))))
       (save-excursion
         (goto-char (overlay-start prefix))
         (re-search-forward (rx (1+ digit)) nil t)
